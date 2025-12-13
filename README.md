@@ -2,6 +2,9 @@
 
 Web-pohjainen merikarttasovellus, joka näyttää Traficomin viralliset merikartat GPS-paikannuksen kanssa. Suunniteltu erityisesti kalastajien ja veneilijöiden tarpeisiin.
 
+![WebMuikku Screenshot](screenshots/webmuikku-app-screenshot.png)
+*WebMuikku käyttöliittymä - Merikartta GPS-paikannuksen kanssa*
+
 ## Ominaisuudet
 
 ### 🗺️ Kartat
@@ -123,6 +126,8 @@ webmuikku/
 ├── index.html           # Pääsovellus
 ├── utils/
 │   └── proxy-server.js  # Node.js proxy WMTS:lle
+├── screenshots/
+│   └── webmuikku-app-screenshot.png  # Sovelluksen kuvakaappaus
 ├── README.md            # Tämä dokumentti
 ├── CHANGELOG.md         # Versiohistoria
 ├── package.json         # Projektin metadata

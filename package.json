@@ -4,9 +4,9 @@
   "description": "Web-pohjainen merikarttasovellus kalastajille - Traficomin viralliset merikartat GPS-paikannuksen kanssa",
   "main": "index.html",
   "scripts": {
-    "start": "node proxy-server.js",
+    "start": "node utils/proxy-server.js",
     "serve": "python3 -m http.server 8000",
-    "proxy": "node proxy-server.js"
+    "proxy": "node utils/proxy-server.js"
   },
   "keywords": [
     "merikartta",
@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/teroronkko/webmuikku.git"
+    "url": "https://github.com/trotor/webmuikku.git"
   },
   "bugs": {
-    "url": "https://github.com/teroronkko/webmuikku/issues"
+    "url": "https://github.com/trotor/webmuikku/issues"
   },
-  "homepage": "https://github.com/teroronkko/webmuikku#readme",
+  "homepage": "https://github.com/trotor/webmuikku#readme",
   "engines": {
     "node": ">=14.0.0"
   },

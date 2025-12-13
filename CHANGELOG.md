@@ -81,4 +81,4 @@ ja tämä projekti noudattaa [semanttista versiointia](https://semver.org/lang/f
 
 ---
 
-[1.0.0]: https://github.com/teroronkko/webmuikku/releases/tag/v1.0.0
+[1.0.0]: https://github.com/trotor/webmuikku/releases/tag/v1.0.0

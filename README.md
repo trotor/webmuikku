@@ -42,13 +42,15 @@ Web-pohjainen merikarttasovellus, joka näyttää Traficomin viralliset merikart
 
 ### 1. Kloonaa repository
 ```bash
-git clone https://github.com/[käyttäjänimi]/webmuikku.git
+git clone https://github.com/trotor/webmuikku.git
 cd webmuikku
 ```
 
 ### 2. Käynnistä proxy-palvelin
 ```bash
-node proxy-server.js
+npm start
+# tai suoraan:
+node utils/proxy-server.js
 ```
 
 Proxy-palvelin käynnistyy portissa 3000 ja välittää WMTS-pyynnöt Traficomille.
@@ -119,17 +121,19 @@ Traficomin WMTS-palvelu estää suoran selainkäytön (ORB-suojaus). Proxy-palve
 ```
 webmuikku/
 ├── index.html           # Pääsovellus
-├── proxy-server.js      # Node.js proxy WMTS:lle
-├── README.md           # Tämä dokumentti
-├── package.json        # Projektin metadata
-├── LICENSE             # MIT-lisenssi
-└── .gitignore          # Git-ohitukset
+├── utils/
+│   └── proxy-server.js  # Node.js proxy WMTS:lle
+├── README.md            # Tämä dokumentti
+├── CHANGELOG.md         # Versiohistoria
+├── package.json         # Projektin metadata
+├── LICENSE              # MIT-lisenssi
+└── .gitignore           # Git-ohitukset
 ```
 
 ## Kehitys
 
 ### Proxy-palvelimen muokkaus
-Proxy-palvelin on `proxy-server.js`. Se välittää WMTS-pyynnöt Traficomille.
+Proxy-palvelin on `utils/proxy-server.js`. Se välittää WMTS-pyynnöt Traficomille.
 
 **URL-rakenne:**
 ```
@@ -168,7 +172,7 @@ MIT License - Vapaa käyttö, muokkaus ja jakelu.
 
 ## Tuki
 
-Ongelmat ja ehdotukset: [GitHub Issues](https://github.com/[käyttäjänimi]/webmuikku/issues)
+Ongelmat ja ehdotukset: [GitHub Issues](https://github.com/trotor/webmuikku/issues)
 
 ## Changelog
 

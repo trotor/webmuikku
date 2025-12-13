@@ -5,6 +5,23 @@ Kaikki merkittävät muutokset projektiin dokumentoidaan tähän.
 Formaatti perustuu [Keep a Changelog](https://keepachangelog.com/fi/1.0.0/),
 ja tämä projekti noudattaa [semanttista versiointia](https://semver.org/lang/fi/).
 
+## [1.1.0] - 2025-12-13
+
+### Muutettu
+- 🔧 **Yksinkertaistettu arkkitehtuuri**
+  - Poistettu proxy-palvelimen vaatimus
+  - Sovellus käyttää nyt suoraa yhteyttä Traficomin WMTS-palveluun
+  - Yksinkertaisemmat asennusohjeet
+  - Ei tarvita Node.js:ää
+
+### Poistettu
+- ❌ Proxy-palvelin (utils/proxy-server.js)
+- ❌ Node.js riippuvuudet
+- ❌ npm start -skripti
+
+### Lisätty
+- 📸 Sovelluksen screenshot dokumentaatiossa
+
 ## [1.0.0] - 2025-12-13
 
 ### Lisätty
@@ -81,4 +98,5 @@ ja tämä projekti noudattaa [semanttista versiointia](https://semver.org/lang/f
 
 ---
 
+[1.1.0]: https://github.com/trotor/webmuikku/releases/tag/v1.1.0
 [1.0.0]: https://github.com/trotor/webmuikku/releases/tag/v1.0.0

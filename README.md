@@ -39,7 +39,6 @@ Web-pohjainen merikarttasovellus, joka näyttää Traficomin viralliset merikart
 ## Asennus
 
 ### Vaatimukset
-- Node.js 14+ (proxy-palvelimelle)
 - Moderni selain (Chrome, Firefox, Safari, Edge)
 - HTTPS tai localhost (GPS toimii vain turvallisessa yhteydessä)
 
@@ -49,29 +48,22 @@ git clone https://github.com/trotor/webmuikku.git
 cd webmuikku
 ```
 
-### 2. Käynnistä proxy-palvelin
-```bash
-npm start
-# tai suoraan:
-node utils/proxy-server.js
-```
-
-Proxy-palvelin käynnistyy portissa 3000 ja välittää WMTS-pyynnöt Traficomille.
-
-### 3. Avaa sovellus selaimessa
+### 2. Avaa sovellus selaimessa
 
 **Paikallisesti:**
 ```bash
 # Python 3
 python3 -m http.server 8000
-
-# Tai avaa suoraan
-open index.html
 ```
 
 Sitten avaa: `http://localhost:8000`
 
-**HTTPS tarvitaan GPS:lle tuotannossa!**
+**TAI suoraan:**
+```bash
+open index.html
+```
+
+**Huom:** GPS toimii vain HTTPS-yhteydellä tai localhost:ssa. Tuotannossa tarvitset HTTPS-palvelimen.
 
 ## Käyttö
 
@@ -104,28 +96,23 @@ Sitten avaa: `http://localhost:8000`
 └──────┬──────┘
        │
        ▼
-┌─────────────┐      ┌──────────────┐
-│ Proxy       │─────▶│  Traficom    │
-│ (Node.js)   │      │  WMTS API    │
-└─────────────┘      └──────────────┘
+┌──────────────┐
+│  Traficom    │
+│  WMTS API    │
+└──────────────┘
 ```
 
 ### Teknologiat
 - **Leaflet.js** - Karttakirjasto
 - **Proj4.js** - Koordinaattimuunnokset
 - **SunCalc.js** - Auringon nousu/lasku
-- **Node.js** - Proxy-palvelin CORS-ongelmien kiertämiseen
-
-### CORS-ratkaisu
-Traficomin WMTS-palvelu estää suoran selainkäytön (ORB-suojaus). Proxy-palvelin välittää pyynnöt ja lisää CORS-headerit.
+- **Traficom WMTS** - Viralliset merikartat
 
 ## Tiedostorakenne
 
 ```
 webmuikku/
-├── index.html           # Pääsovellus
-├── utils/
-│   └── proxy-server.js  # Node.js proxy WMTS:lle
+├── index.html           # Pääsovellus (HTML, CSS, JavaScript)
 ├── screenshots/
 │   └── webmuikku-app-screenshot.png  # Sovelluksen kuvakaappaus
 ├── README.md            # Tämä dokumentti
@@ -136,14 +123,6 @@ webmuikku/
 ```
 
 ## Kehitys
-
-### Proxy-palvelimen muokkaus
-Proxy-palvelin on `utils/proxy-server.js`. Se välittää WMTS-pyynnöt Traficomille.
-
-**URL-rakenne:**
-```
-http://localhost:3000?layer=Traficom:Merikarttasarja%20A%20public&z=10&x=582&y=296
-```
 
 ### Karttatasojen lisääminen
 Muokkaa `index.html` tiedostossa `wmtsLayers`-objektia:

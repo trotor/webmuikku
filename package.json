@@ -1,0 +1,40 @@
+{
+  "name": "webmuikku",
+  "version": "1.0.0",
+  "description": "Web-pohjainen merikarttasovellus kalastajille - Traficomin viralliset merikartat GPS-paikannuksen kanssa",
+  "main": "index.html",
+  "scripts": {
+    "start": "node proxy-server.js",
+    "serve": "python3 -m http.server 8000",
+    "proxy": "node proxy-server.js"
+  },
+  "keywords": [
+    "merikartta",
+    "nautical-chart",
+    "gps",
+    "veneilykartta",
+    "kalastus",
+    "fishing",
+    "traficom",
+    "wmts",
+    "leaflet"
+  ],
+  "author": {
+    "name": "Tero Ronkko",
+    "email": "tero.ronkko@example.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/teroronkko/webmuikku.git"
+  },
+  "bugs": {
+    "url": "https://github.com/teroronkko/webmuikku/issues"
+  },
+  "homepage": "https://github.com/teroronkko/webmuikku#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

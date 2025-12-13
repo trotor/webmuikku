@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Merikartta - Kalastajille</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            min-width: 280px;
+            max-width: 320px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        #info-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #0066cc;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 5px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-value {
+            color: #0066cc;
+            font-weight: 500;
+        }
+
+        .speed-large {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0066cc;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .speed-unit {
+            font-size: 16px;
+            color: #666;
+        }
+
+        #center-button {
+            position: absolute;
+            bottom: 80px;
+            right: 10px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        #center-button:active {
+            background: #f0f0f0;
+        }
+
+        #center-button.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        #layer-selector {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #layer-selector select {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        .loading {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Crosshair in map center */
+        .map-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .map-crosshair::before,
+        .map-crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 0, 0, 0.6);
+        }
+
+        .map-crosshair::before {
+            width: 2px;
+            height: 30px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .map-crosshair::after {
+            width: 30px;
+            height: 2px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @media (max-width: 480px) {
+            #info-panel {
+                max-width: 260px;
+                min-width: 240px;
+                font-size: 12px;
+                padding: 10px;
+            }
+
+            .speed-large {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Crosshair for map center -->
+    <div class="map-crosshair"></div>
+
+    <div id="info-panel">
+        <h3>📍 Sijaintitiedot</h3>
+
+        <div class="info-row" style="background: #0066cc; color: white; padding: 8px; margin: -15px -15px 10px -15px; border-radius: 10px 10px 0 0;">
+            <span class="info-label" style="color: white;">Zoom-taso:</span>
+            <span class="info-value" style="color: white; font-size: 18px; font-weight: bold;" id="zoom-level">12</span>
+        </div>
+        <div style="font-size: 11px; color: #666; padding: 5px 0; border-bottom: 1px solid #eee;">
+            <div>Traficom: zoom 5-15</div>
+            <div style="margin-top: 3px;">A=laaja, B=rannikko, C=satamat, D=ankkurit</div>
+        </div>
+
+        <div class="speed-large">
+            <span id="speed">--</span>
+            <span class="speed-unit">kn</span>
+        </div>
+
+        <div class="info-row" style="background: #f0f8ff; font-weight: bold;">
+            <span class="info-label">📍 Kartan keskipiste:</span>
+            <span class="info-value" id="map-center-coords">60.170°, 24.938°</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">GPS WGS84:</span>
+            <span class="info-value" id="wgs84-coords">-- , --</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">GPS EUREF-FIN:</span>
+            <span class="info-value" id="euref-coords">-- , --</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">🌅 Auringonnousu:</span>
+            <span class="info-value" id="sunrise">--:--</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">🌇 Auringonlasku:</span>
+            <span class="info-value" id="sunset">--:--</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Kurssi:</span>
+            <span class="info-value" id="heading">--°</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">GPS-tarkkuus:</span>
+            <span class="info-value" id="accuracy">-- m</span>
+        </div>
+    </div>
+
+    <button id="center-button" title="Klikkaa: Keskitä | Tuplaklikkaa: Seuranta päälle/pois">🎯</button>
+
+    <div id="layer-selector">
+        <select id="map-layer">
+            <optgroup label="📱 Testaus">
+                <option value="osm">OpenStreetMap</option>
+                <option value="openseamap">OpenSeaMap</option>
+            </optgroup>
+
+            <optgroup label="⭐ SUOSITUS KALASTAJILLE">
+                <option value="veneilykartat">Veneilykartat</option>
+                <option value="rannikkokartat">Rannikkokartat</option>
+                <option value="satamakartat">Satamakartat</option>
+                <option value="yleiskartat_100k">Yleiskartat 1:100k</option>
+                <option value="yleiskartat_250k">Yleiskartat 1:250k</option>
+            </optgroup>
+
+            <optgroup label="🗺️ Koostekartat">
+                <option value="merikartat_kaikki" selected>Kaikki merikartat</option>
+                <option value="veneilykartat_erikois">Veneilykartat erikois</option>
+                <option value="rannikkokartat_erikois">Rannikkokartat erikois</option>
+                <option value="satamakartat_erikois">Satamakartat erikois</option>
+            </optgroup>
+
+            <optgroup label="🔤 Sarjat A-G">
+                <option value="sarja_a">Sarja A</option>
+                <option value="sarja_b">Sarja B</option>
+                <option value="sarja_c">Sarja C</option>
+                <option value="sarja_d">Sarja D</option>
+                <option value="sarja_e">Sarja E</option>
+                <option value="sarja_f">Sarja F</option>
+                <option value="sarja_g">Sarja G</option>
+            </optgroup>
+
+            <optgroup label="🔤 Sarjat J-V">
+                <option value="sarja_j">Sarja J</option>
+                <option value="sarja_k">Sarja K</option>
+                <option value="sarja_l">Sarja L</option>
+                <option value="sarja_m">Sarja M</option>
+                <option value="sarja_n">Sarja N</option>
+                <option value="sarja_o">Sarja O</option>
+                <option value="sarja_p">Sarja P</option>
+                <option value="sarja_r">Sarja R</option>
+                <option value="sarja_t">Sarja T</option>
+                <option value="sarja_v">Sarja V</option>
+            </optgroup>
+        </select>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Proj4js for coordinate transformations -->
+    <script src="https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js"></script>
+
+    <!-- SunCalc for sunrise/sunset -->
+    <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+
+    <script>
+        console.log('Starting app initialization...');
+        console.log('Leaflet loaded:', typeof L !== 'undefined');
+        console.log('Proj4 loaded:', typeof proj4 !== 'undefined');
+        console.log('SunCalc loaded:', typeof SunCalc !== 'undefined');
+
+        // Define EUREF-FIN (ETRS-TM35FIN) projection
+        proj4.defs("EPSG:3067", "+proj=utm +zone=35 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+
+        // Initialize map
+        const map = L.map('map', {
+            center: [60.1699, 24.9384], // Helsinki
+            zoom: 15,
+            zoomControl: true
+        });
+
+        // WMTS layer configuration - KAIKKI 42 tasoa
+        const wmtsLayers = {
+            // Kooste-tasot (SUOSITUS kalastajille)
+            'veneilykartat': 'Traficom:Veneilykartat public',
+            'veneilykartat_erikois': 'Traficom:Veneilykarttojen erikoiskartat',
+            'rannikkokartat': 'Traficom:Rannikkokartat public',
+            'rannikkokartat_erikois': 'Traficom:Rannikkokarttojen erikoiskartat',
+            'satamakartat': 'Traficom:Satamakartat',
+            'satamakartat_erikois': 'Traficom:Satamakarttojen erikoiskartat',
+            'merikartat_kaikki': 'Traficom:Merikarttasarjat public',
+            'merikartat_kaikki_erikois': 'Traficom:Merikarttasarjojen erikoiskartat',
+            'yleiskartat_100k': 'Traficom:Yleiskartat 100k public',
+            'yleiskartat_250k': 'Traficom:Yleiskartat 250k public',
+
+            // Yksittäiset sarjat A-V
+            'sarja_a': 'Traficom:Merikarttasarja A public',
+            'sarja_a_erikois': 'Traficom:Merikarttasarja A erikoiskartat',
+            'sarja_b': 'Traficom:Merikarttasarja B',
+            'sarja_b_erikois': 'Traficom:Merikarttasarja B erikoiskartat',
+            'sarja_c': 'Traficom:Merikarttasarja C public',
+            'sarja_c_erikois': 'Traficom:Merikarttasarja C erikoiskartat',
+            'sarja_d': 'Traficom:Merikarttasarja D',
+            'sarja_d_erikois': 'Traficom:Merikarttasarja D erikoiskartat',
+            'sarja_e': 'Traficom:Merikarttasarja E',
+            'sarja_e_erikois': 'Traficom:Merikarttasarja E erikoiskartat',
+            'sarja_f': 'Traficom:Merikarttasarja F public',
+            'sarja_f_erikois': 'Traficom:Merikarttasarja F erikoiskartat',
+            'sarja_g': 'Traficom:Merikarttasarja G public',
+            'sarja_g_erikois': 'Traficom:Merikarttasarja G erikoiskartat',
+            'sarja_j': 'Traficom:Merikarttasarja J',
+            'sarja_j_erikois': 'Traficom:Merikarttasarja J erikoiskartat',
+            'sarja_k': 'Traficom:Merikarttasarja K',
+            'sarja_k_erikois': 'Traficom:Merikarttasarja K erikoiskartat',
+            'sarja_l': 'Traficom:Merikarttasarja L',
+            'sarja_l_erikois': 'Traficom:Merikarttasarja L erikoiskartat',
+            'sarja_m': 'Traficom:Merikarttasarja M',
+            'sarja_m_erikois': 'Traficom:Merikarttasarja M erikoiskartat',
+            'sarja_n': 'Traficom:Merikarttasarja N',
+            'sarja_n_erikois': 'Traficom:Merikarttasarja N erikoiskartat',
+            'sarja_o': 'Traficom:Merikarttasarja O',
+            'sarja_o_erikois': 'Traficom:Merikarttasarja O erikoiskartat',
+            'sarja_p': 'Traficom:Merikarttasarja P',
+            'sarja_p_erikois': 'Traficom:Merikarttasarja P erikoiskartat',
+            'sarja_r': 'Traficom:Merikarttasarja R',
+            'sarja_r_erikois': 'Traficom:Merikarttasarja R erikoiskartat',
+            'sarja_t': 'Traficom:Merikarttasarja T',
+            'sarja_t_erikois': 'Traficom:Merikarttasarja T erikoiskartat',
+            'sarja_v': 'Traficom:Merikarttasarja V',
+            'sarja_v_erikois': 'Traficom:Merikarttasarja V erikoiskartat',
+
+            'osm': 'OpenStreetMap'
+        };
+
+        let currentLayer = null;
+
+        let seaMapOverlay = null;
+
+        function createMapLayer(layerName) {
+            // OpenStreetMap
+            if (layerName === 'osm') {
+                return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                });
+            }
+
+            // OpenSeaMap with OSM base
+            if (layerName === 'openseamap') {
+                // Base layer
+                const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                });
+
+                // Add seamark overlay
+                if (seaMapOverlay) {
+                    map.removeLayer(seaMapOverlay);
+                }
+                seaMapOverlay = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: ' | &copy; OpenSeaMap'
+                });
+                setTimeout(() => seaMapOverlay.addTo(map), 100);
+
+                return baseLayer;
+            }
+
+            // Traficom WMTS SUORAAN (ilman proxya)
+            const layerId = wmtsLayers[layerName];
+
+            // WMTS REST URL format: .../Layer/Style/TileMatrixSet/TileMatrix/TileRow/TileCol
+            // TileMatrix = WGS84_Pseudo-Mercator:z, TileRow = y, TileCol = x
+            const directUrl = 'https://julkinen.traficom.fi/rasteripalvelu/wmts/rest/' +
+                            encodeURIComponent(layerId) +
+                            '/default/WGS84_Pseudo-Mercator/WGS84_Pseudo-Mercator:{z}/{y}/{x}?format=image/png';
+
+            console.log('Using DIRECT WMTS (no proxy):', directUrl);
+            console.log('Layer:', layerId);
+
+            return L.tileLayer(directUrl, {
+                maxZoom: 15,
+                minZoom: 5,
+                attribution: '&copy; Traficom Väylävirasto',
+                crossOrigin: 'anonymous'
+            });
+        }
+
+        // Add initial layer - Kaikki merikartat
+        currentLayer = createMapLayer('merikartat_kaikki');
+        currentLayer.addTo(map);
+
+        // Update zoom level display
+        function updateZoomLevel() {
+            const zoom = map.getZoom();
+            document.getElementById('zoom-level').textContent = zoom;
+            console.log('Current zoom level:', zoom);
+        }
+
+        // Update map center coordinates display
+        function updateMapCenter() {
+            const center = map.getCenter();
+            const lat = center.lat.toFixed(6);
+            const lon = center.lng.toFixed(6);
+            document.getElementById('map-center-coords').textContent = `${lat}°, ${lon}°`;
+            console.log('Map center:', lat, lon);
+        }
+
+        // Listen to zoom and move changes
+        map.on('zoomend', updateZoomLevel);
+        map.on('moveend', updateMapCenter);
+
+        // Initial display
+        updateZoomLevel();
+        updateMapCenter();
+
+        // Layer selector
+        document.getElementById('map-layer').addEventListener('change', function(e) {
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+            if (seaMapOverlay) {
+                map.removeLayer(seaMapOverlay);
+                seaMapOverlay = null;
+            }
+            currentLayer = createMapLayer(e.target.value);
+            if (currentLayer) {
+                currentLayer.addTo(map);
+            }
+        });
+
+        // Position marker
+        let positionMarker = null;
+        let positionCircle = null;
+        let autoCenterEnabled = true;
+        let lastPosition = null; // Tallenna viimeisin GPS-sijainti
+
+        // Center button
+        const centerButton = document.getElementById('center-button');
+        centerButton.classList.add('active');
+
+        let clickCount = 0;
+        let clickTimer = null;
+
+        centerButton.addEventListener('click', function() {
+            clickCount++;
+
+            if (clickCount === 1) {
+                // Yksittäinen klikkaus - keskitä kartta
+                clickTimer = setTimeout(function() {
+                    // Keskitä kartta GPS-sijaintiin
+                    if (lastPosition) {
+                        map.setView([lastPosition.lat, lastPosition.lon], map.getZoom());
+                    }
+                    clickCount = 0;
+                }, 300); // Odota 300ms tuplaklikkausta varten
+            } else if (clickCount === 2) {
+                // Tuplakklikkaus - toggle automaattinen seuranta
+                clearTimeout(clickTimer);
+                clickCount = 0;
+
+                autoCenterEnabled = !autoCenterEnabled;
+
+                if (autoCenterEnabled) {
+                    centerButton.classList.add('active');
+                } else {
+                    centerButton.classList.remove('active');
+                }
+            }
+        });
+
+        // GPS tracking
+        function updatePosition(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            const speed = position.coords.speed;
+            const heading = position.coords.heading;
+
+            // Tallenna viimeisin sijainti center-nappia varten
+            lastPosition = { lat, lon };
+
+            // Update marker
+            if (positionMarker) {
+                positionMarker.setLatLng([lat, lon]);
+                positionCircle.setLatLng([lat, lon]);
+                positionCircle.setRadius(accuracy);
+            } else {
+                positionMarker = L.circleMarker([lat, lon], {
+                    color: '#0066cc',
+                    fillColor: '#0066cc',
+                    fillOpacity: 0.8,
+                    radius: 8
+                }).addTo(map);
+
+                positionCircle = L.circle([lat, lon], {
+                    color: '#0066cc',
+                    fillColor: '#0066cc',
+                    fillOpacity: 0.1,
+                    radius: accuracy
+                }).addTo(map);
+            }
+
+            // Center map if enabled
+            if (autoCenterEnabled) {
+                map.setView([lat, lon], map.getZoom());
+            }
+
+            // Update WGS84 coordinates
+            document.getElementById('wgs84-coords').textContent =
+                `${lat.toFixed(6)}°, ${lon.toFixed(6)}°`;
+
+            // Convert to EUREF-FIN (EPSG:3067)
+            const eurefCoords = proj4('EPSG:4326', 'EPSG:3067', [lon, lat]);
+            document.getElementById('euref-coords').textContent =
+                `N: ${eurefCoords[1].toFixed(2)}, E: ${eurefCoords[0].toFixed(2)}`;
+
+            // Update speed (convert m/s to knots)
+            if (speed !== null && speed !== undefined) {
+                const knots = speed * 1.94384;
+                document.getElementById('speed').textContent = knots.toFixed(1);
+            } else {
+                document.getElementById('speed').textContent = '--';
+            }
+
+            // Update heading
+            if (heading !== null && heading !== undefined) {
+                document.getElementById('heading').textContent = `${Math.round(heading)}°`;
+            } else {
+                document.getElementById('heading').textContent = '--';
+            }
+
+            // Update accuracy
+            document.getElementById('accuracy').textContent = `${Math.round(accuracy)} m`;
+
+            // Calculate sunrise/sunset
+            const times = SunCalc.getTimes(new Date(), lat, lon);
+            document.getElementById('sunrise').textContent = formatTime(times.sunrise);
+            document.getElementById('sunset').textContent = formatTime(times.sunset);
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function handleError(error) {
+            console.error('GPS error:', error);
+            alert('GPS-paikannuksessa virhe. Tarkista laitteen asetukset ja salli sijainnin käyttö.');
+        }
+
+        // Start GPS tracking
+        if ('geolocation' in navigator) {
+            navigator.geolocation.watchPosition(updatePosition, handleError, {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 5000
+            });
+        } else {
+            alert('GPS-paikannus ei ole tuettuna tässä selaimessa.');
+        }
+
+        // Prevent screen from sleeping (experimental)
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log('Wake Lock not supported:', err);
+            }
+        }
+
+        requestWakeLock();
+
+        // Request wake lock again when page becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        });
+    </script>
+</body>
+</html>

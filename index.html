@@ -84,9 +84,8 @@
             color: #666;
         }
 
-        #center-button {
+        .map-button {
             position: absolute;
-            bottom: 80px;
             right: 10px;
             width: 50px;
             height: 50px;
@@ -102,14 +101,30 @@
             font-size: 24px;
         }
 
-        #center-button:active {
+        .map-button:active {
             background: #f0f0f0;
         }
 
-        #center-button.active {
+        .map-button.active {
             background: #0066cc;
             color: white;
             border-color: #0066cc;
+        }
+
+        .map-button:disabled {
+            background: #ccc;
+            color: #888;
+            border-color: #aaa;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #center-button {
+            bottom: 80px;
+        }
+
+        #fullscreen-button {
+            bottom: 140px;
         }
 
         #layer-selector {
@@ -189,15 +204,14 @@
     <div class="map-crosshair"></div>
 
     <div id="info-panel">
-        <h3>📍 Sijaintitiedot</h3>
-
-        <div class="info-row" style="background: #0066cc; color: white; padding: 8px; margin: -15px -15px 10px -15px; border-radius: 10px 10px 0 0;">
-            <span class="info-label" style="color: white;">Zoom-taso:</span>
-            <span class="info-value" style="color: white; font-size: 18px; font-weight: bold;" id="zoom-level">12</span>
+        <div style="background: #0066cc; color: white; padding: 10px; margin: -15px -15px 10px -15px; border-radius: 10px 10px 0 0; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold;">WebMuikku</div>
+            <div style="font-size: 12px; opacity: 0.9;">v1.2.0</div>
         </div>
-        <div style="font-size: 11px; color: #666; padding: 5px 0; border-bottom: 1px solid #eee;">
-            <div>Traficom: zoom 5-15</div>
-            <div style="margin-top: 3px;">A=laaja, B=rannikko, C=satamat, D=ankkurit</div>
+
+        <div class="info-row">
+            <span class="info-label">Zoom-taso:</span>
+            <span class="info-value" id="zoom-level">12</span>
         </div>
 
         <div class="speed-large">
@@ -205,9 +219,14 @@
             <span class="speed-unit">kn</span>
         </div>
 
-        <div class="info-row" style="background: #f0f8ff; font-weight: bold;">
-            <span class="info-label">📍 Kartan keskipiste:</span>
+        <div class="info-row" style="background: #f0f8ff;">
+            <span class="info-label">Keskipiste WGS84:</span>
             <span class="info-value" id="map-center-coords">60.170°, 24.938°</span>
+        </div>
+
+        <div class="info-row" style="background: #f0f8ff;">
+            <span class="info-label">Keskipiste EUREF:</span>
+            <span class="info-value" id="map-center-euref">-- , --</span>
         </div>
 
         <div class="info-row">
@@ -241,7 +260,8 @@
         </div>
     </div>
 
-    <button id="center-button" title="Klikkaa: Keskitä | Tuplaklikkaa: Seuranta päälle/pois">🎯</button>
+    <button id="fullscreen-button" class="map-button" title="Koko näyttö">⛶</button>
+    <button id="center-button" class="map-button" disabled title="Odotetaan GPS-signaalia...">🎯</button>
 
     <div id="layer-selector">
         <select id="map-layer">
@@ -312,8 +332,12 @@
         const map = L.map('map', {
             center: [60.1699, 24.9384], // Helsinki
             zoom: 15,
-            zoomControl: true
+            zoomControl: true,
+            attributionControl: true
         });
+
+        // Add app name and version to attribution
+        map.attributionControl.setPrefix('WebMuikku v1.2.0');
 
         // WMTS layer configuration - KAIKKI 42 tasoa
         const wmtsLayers = {
@@ -369,8 +393,16 @@
         };
 
         let currentLayer = null;
+        let baseLayer = null;
 
         let seaMapOverlay = null;
+
+        // Create persistent base layer (OpenStreetMap)
+        baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        });
+        baseLayer.addTo(map);
 
         function createMapLayer(layerName) {
             // OpenStreetMap
@@ -418,7 +450,8 @@
                 maxZoom: 15,
                 minZoom: 5,
                 attribution: '&copy; Traficom Väylävirasto',
-                crossOrigin: 'anonymous'
+                crossOrigin: 'anonymous',
+                errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
             });
         }
 
@@ -439,7 +472,11 @@
             const lat = center.lat.toFixed(6);
             const lon = center.lng.toFixed(6);
             document.getElementById('map-center-coords').textContent = `${lat}°, ${lon}°`;
-            console.log('Map center:', lat, lon);
+
+            // Convert to EUREF-FIN (EPSG:3067)
+            const eurefCoords = proj4('EPSG:4326', 'EPSG:3067', [center.lng, center.lat]);
+            document.getElementById('map-center-euref').textContent =
+                `N: ${eurefCoords[1].toFixed(0)}, E: ${eurefCoords[0].toFixed(0)}`;
         }
 
         // Listen to zoom and move changes
@@ -459,7 +496,23 @@
                 map.removeLayer(seaMapOverlay);
                 seaMapOverlay = null;
             }
-            currentLayer = createMapLayer(e.target.value);
+
+            const layerName = e.target.value;
+
+            // Hide base layer for OSM/OpenSeaMap (they are complete base maps)
+            if (layerName === 'osm' || layerName === 'openseamap') {
+                if (map.hasLayer(baseLayer)) {
+                    map.removeLayer(baseLayer);
+                }
+            } else {
+                // Show base layer for Traficom layers (they don't cover everything)
+                if (!map.hasLayer(baseLayer)) {
+                    baseLayer.addTo(map);
+                    baseLayer.bringToBack();
+                }
+            }
+
+            currentLayer = createMapLayer(layerName);
             if (currentLayer) {
                 currentLayer.addTo(map);
             }
@@ -471,9 +524,37 @@
         let autoCenterEnabled = true;
         let lastPosition = null; // Tallenna viimeisin GPS-sijainti
 
+        // Fullscreen button
+        const fullscreenButton = document.getElementById('fullscreen-button');
+
+        fullscreenButton.addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    fullscreenButton.classList.add('active');
+                    fullscreenButton.textContent = '⛶';
+                }).catch(err => {
+                    console.log('Fullscreen error:', err);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    fullscreenButton.classList.remove('active');
+                    fullscreenButton.textContent = '⛶';
+                }).catch(err => {
+                    console.log('Exit fullscreen error:', err);
+                });
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenButton.classList.add('active');
+            } else {
+                fullscreenButton.classList.remove('active');
+            }
+        });
+
         // Center button
         const centerButton = document.getElementById('center-button');
-        centerButton.classList.add('active');
 
         let clickCount = 0;
         let clickTimer = null;
@@ -484,9 +565,9 @@
             if (clickCount === 1) {
                 // Yksittäinen klikkaus - keskitä kartta
                 clickTimer = setTimeout(function() {
-                    // Keskitä kartta GPS-sijaintiin
+                    // Keskitä kartta GPS-sijaintiin ja zoomaa merikarttatsolle
                     if (lastPosition) {
-                        map.setView([lastPosition.lat, lastPosition.lon], map.getZoom());
+                        map.setView([lastPosition.lat, lastPosition.lon], 15);
                     }
                     clickCount = 0;
                 }, 300); // Odota 300ms tuplaklikkausta varten
@@ -515,6 +596,13 @@
 
             // Tallenna viimeisin sijainti center-nappia varten
             lastPosition = { lat, lon };
+
+            // Enable center button on first GPS fix
+            if (centerButton.disabled) {
+                centerButton.disabled = false;
+                centerButton.classList.add('active');
+                centerButton.title = 'Klikkaa: Keskitä | Tuplaklikkaa: Seuranta päälle/pois';
+            }
 
             // Update marker
             if (positionMarker) {
@@ -580,16 +668,20 @@
         }
 
         function handleError(error) {
-            console.error('GPS error:', error);
-            alert('GPS-paikannuksessa virhe. Tarkista laitteen asetukset ja salli sijainnin käyttö.');
+            console.error('GPS error:', error.code, error.message);
+            // Näytä alert vain jos käyttäjä estää paikannuksen (code 1)
+            if (error.code === 1) {
+                alert('GPS-paikannus estetty. Salli sijainnin käyttö selaimen asetuksista.');
+            }
+            // Timeout (code 3) ja muut virheet vain lokitetaan - GPS yrittää uudelleen
         }
 
         // Start GPS tracking
         if ('geolocation' in navigator) {
             navigator.geolocation.watchPosition(updatePosition, handleError, {
                 enableHighAccuracy: true,
-                maximumAge: 0,
-                timeout: 5000
+                maximumAge: 10000,
+                timeout: 30000
             });
         } else {
             alert('GPS-paikannus ei ole tuettuna tässä selaimessa.');

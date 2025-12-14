@@ -18,6 +18,7 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 .claude/
+CLAUDE.md
 
 # Temporary files
 *.tmp

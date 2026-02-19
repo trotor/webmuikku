@@ -44,6 +44,58 @@
             max-width: 320px;
             font-size: 14px;
             z-index: 1000;
+            transition: min-width 0.3s ease, max-width 0.3s ease, padding 0.3s ease;
+        }
+
+        #info-panel.collapsed {
+            min-width: auto;
+            max-width: none;
+            padding: 0;
+        }
+
+        #info-panel.collapsed .info-panel-content {
+            display: none;
+        }
+
+        #info-panel.collapsed .info-panel-header {
+            margin: 0;
+            border-radius: 10px;
+        }
+
+        .info-panel-header {
+            background: #0066cc;
+            color: white;
+            padding: 10px;
+            margin: -15px -15px 10px -15px;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #info-panel-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+            opacity: 0.9;
+            transition: transform 0.3s ease;
+        }
+
+        #info-panel-toggle:hover {
+            opacity: 1;
+        }
+
+        #info-panel.collapsed #info-panel-toggle {
+            transform: translateY(-50%) rotate(180deg);
         }
 
         #info-panel h3 {
@@ -191,6 +243,16 @@
                 padding: 10px;
             }
 
+            #info-panel.collapsed {
+                min-width: auto;
+                max-width: none;
+                padding: 0;
+            }
+
+            .info-panel-header {
+                margin: -10px -10px 10px -10px;
+            }
+
             .speed-large {
                 font-size: 24px;
             }
@@ -204,62 +266,65 @@
     <div class="map-crosshair"></div>
 
     <div id="info-panel">
-        <div style="background: #0066cc; color: white; padding: 10px; margin: -15px -15px 10px -15px; border-radius: 10px 10px 0 0; text-align: center;">
+        <div class="info-panel-header" id="info-panel-header">
             <div style="font-size: 18px; font-weight: bold;">WebMuikku</div>
             <div style="font-size: 12px; opacity: 0.9;">
                 v1.2.0 |
-                <a href="https://github.com/trotor/webmuikku" target="_blank" style="color: white; text-decoration: underline;">GitHub</a>
+                <a href="https://github.com/trotor/webmuikku" target="_blank" style="color: white; text-decoration: underline;" onclick="event.stopPropagation()">GitHub</a>
             </div>
+            <button id="info-panel-toggle" title="Piilota/näytä infopalkki">&#9650;</button>
         </div>
 
-        <div class="info-row">
-            <span class="info-label">Zoom-taso:</span>
-            <span class="info-value" id="zoom-level">12</span>
-        </div>
+        <div class="info-panel-content">
+            <div class="info-row">
+                <span class="info-label">Zoom-taso:</span>
+                <span class="info-value" id="zoom-level">12</span>
+            </div>
 
-        <div class="speed-large">
-            <span id="speed">--</span>
-            <span class="speed-unit">kn</span>
-        </div>
+            <div class="speed-large">
+                <span id="speed">--</span>
+                <span class="speed-unit">kn</span>
+            </div>
 
-        <div class="info-row" style="background: #f0f8ff;">
-            <span class="info-label">Keskipiste WGS84:</span>
-            <span class="info-value" id="map-center-coords">60.170°, 24.938°</span>
-        </div>
+            <div class="info-row" style="background: #f0f8ff;">
+                <span class="info-label">Keskipiste WGS84:</span>
+                <span class="info-value" id="map-center-coords">60.170°, 24.938°</span>
+            </div>
 
-        <div class="info-row" style="background: #f0f8ff;">
-            <span class="info-label">Keskipiste EUREF:</span>
-            <span class="info-value" id="map-center-euref">-- , --</span>
-        </div>
+            <div class="info-row" style="background: #f0f8ff;">
+                <span class="info-label">Keskipiste EUREF:</span>
+                <span class="info-value" id="map-center-euref">-- , --</span>
+            </div>
 
-        <div class="info-row">
-            <span class="info-label">GPS WGS84:</span>
-            <span class="info-value" id="wgs84-coords">-- , --</span>
-        </div>
+            <div class="info-row">
+                <span class="info-label">GPS WGS84:</span>
+                <span class="info-value" id="wgs84-coords">-- , --</span>
+            </div>
 
-        <div class="info-row">
-            <span class="info-label">GPS EUREF-FIN:</span>
-            <span class="info-value" id="euref-coords">-- , --</span>
-        </div>
+            <div class="info-row">
+                <span class="info-label">GPS EUREF-FIN:</span>
+                <span class="info-value" id="euref-coords">-- , --</span>
+            </div>
 
-        <div class="info-row">
-            <span class="info-label">🌅 Auringonnousu:</span>
-            <span class="info-value" id="sunrise">--:--</span>
-        </div>
+            <div class="info-row">
+                <span class="info-label">Auringonnousu:</span>
+                <span class="info-value" id="sunrise">--:--</span>
+            </div>
 
-        <div class="info-row">
-            <span class="info-label">🌇 Auringonlasku:</span>
-            <span class="info-value" id="sunset">--:--</span>
-        </div>
+            <div class="info-row">
+                <span class="info-label">Auringonlasku:</span>
+                <span class="info-value" id="sunset">--:--</span>
+            </div>
 
-        <div class="info-row">
-            <span class="info-label">Kurssi:</span>
-            <span class="info-value" id="heading">--°</span>
-        </div>
+            <div class="info-row">
+                <span class="info-label">Kurssi:</span>
+                <span class="info-value" id="heading">--°</span>
+            </div>
 
-        <div class="info-row">
-            <span class="info-label">GPS-tarkkuus:</span>
-            <span class="info-value" id="accuracy">-- m</span>
+            <div class="info-row">
+                <span class="info-label">GPS-tarkkuus:</span>
+                <span class="info-value" id="accuracy">-- m</span>
+            </div>
         </div>
     </div>
 
@@ -323,6 +388,28 @@
     <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 
     <script>
+        // Info panel toggle
+        const infoPanel = document.getElementById('info-panel');
+        const infoPanelHeader = document.getElementById('info-panel-header');
+
+        function setInfoPanelCollapsed(collapsed) {
+            if (collapsed) {
+                infoPanel.classList.add('collapsed');
+            } else {
+                infoPanel.classList.remove('collapsed');
+            }
+            sessionStorage.setItem('infoPanelCollapsed', collapsed);
+        }
+
+        // Restore state from session
+        if (sessionStorage.getItem('infoPanelCollapsed') === 'true') {
+            setInfoPanelCollapsed(true);
+        }
+
+        infoPanelHeader.addEventListener('click', function() {
+            setInfoPanelCollapsed(!infoPanel.classList.contains('collapsed'));
+        });
+
         console.log('Starting app initialization...');
         console.log('Leaflet loaded:', typeof L !== 'undefined');
         console.log('Proj4 loaded:', typeof proj4 !== 'undefined');

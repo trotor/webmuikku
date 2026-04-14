@@ -17,6 +17,7 @@ jobs:
         run: |
           mkdir -p dist
           cp index.html dist/
+          cp privacy.html dist/
           cp -r screenshots dist/ 2>/dev/null || true
           echo "✓ Dist directory prepared"
 
